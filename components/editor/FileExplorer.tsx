@@ -76,16 +76,19 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ fileSystem, setFileSystem, 
         const newEntries: AppFile[] = [];
         // FIX: Replaced forEach with a for...of loop to fix type inference issues with the 'file' variable.
         // With the name collision resolved, `file` is now correctly inferred as a DOM `File` object.
-        for (const file of Array.from(files)) {
+        // FIX: Renamed loop variable to `uploadedFile` to ensure it is correctly typed as a DOM `File` object
+        // and to avoid any potential type inference conflicts.
+        // FIX: Iterate directly over the `FileList` object. Using `Array.from(files)` was causing `uploadedFile` to be of type `unknown`.
+        for (const uploadedFile of files) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const content = e.target?.result as string;
-                newEntries.push({ id: Date.now().toString() + file.name, name: file.name, content, type: 'file' });
+                newEntries.push({ id: Date.now().toString() + uploadedFile.name, name: uploadedFile.name, content, type: 'file' });
                 if (newEntries.length === files.length) {
                     setFileSystem(fs => [...fs, ...newEntries]);
                 }
             };
-            reader.readAsText(file);
+            reader.readAsText(uploadedFile);
         }
     };
 

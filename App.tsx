@@ -14,6 +14,7 @@ import InstantAppPanel from './components/panels/InstantAppPanel';
 import CollaborationPanel from './components/panels/CollaborationPanel';
 import HistoryPanel from './components/panels/HistoryPanel';
 import OutputPanel from './components/panels/OutputPanel';
+import VoiceChatPanel from './components/panels/VoiceChatPanel';
 import * as geminiService from './services/geminiService';
 import { findFile, getAllFiles } from './utils/fileSystem';
 
@@ -128,6 +129,8 @@ const App: React.FC = () => {
                 return <AiFeaturesPanel onFeatureSelect={handleAiFeature} isLoading={isLoading} aiOutput={aiOutput} />;
             case Tab.AI_CHAT:
                 return <AiChatPanel messages={chatMessages} onSendMessage={handleSendChatMessage} isLoading={isLoading} activeFile={activeFile} />;
+            case Tab.VOICE_CHAT:
+                return <VoiceChatPanel />;
             case Tab.LEARNING_PATH:
                 return <LearningPathPanel allFiles={allFiles} />;
             case Tab.AI_DASHBOARD:

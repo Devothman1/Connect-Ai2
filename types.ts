@@ -10,6 +10,12 @@ export interface ChatMessage {
     text: string;
 }
 
+export interface TranscriptEntry {
+    sender: 'user' | 'ai';
+    text: string;
+    isFinal: boolean;
+}
+
 export interface File {
     id: string;
     name: string;
