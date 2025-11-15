@@ -1,66 +1,9 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality, Blob, LiveSession } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality, LiveSession } from "@google/genai";
 import Card from '../Card';
 import Button from '../Button';
 import { TranscriptEntry } from '../../types';
-
-// --- Audio Utility Functions ---
-
-// Decode base64 string to Uint8Array
-function decode(base64: string): Uint8Array {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-}
-
-// Encode Uint8Array to base64 string
-function encode(bytes: Uint8Array): string {
-    let binary = '';
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-}
-
-// Decode raw PCM audio data into an AudioBuffer
-async function decodeAudioData(
-    data: Uint8Array,
-    ctx: AudioContext,
-    sampleRate: number,
-    numChannels: number,
-): Promise<AudioBuffer> {
-    const dataInt16 = new Int16Array(data.buffer);
-    const frameCount = dataInt16.length / numChannels;
-    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-    for (let channel = 0; channel < numChannels; channel++) {
-        const channelData = buffer.getChannelData(channel);
-        for (let i = 0; i < frameCount; i++) {
-            channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-        }
-    }
-    return buffer;
-}
-
-// Create a Blob object for the Gemini API
-function createBlob(data: Float32Array): Blob {
-    const l = data.length;
-    const int16 = new Int16Array(l);
-    for (let i = 0; i < l; i++) {
-        int16[i] = data[i] * 32768;
-    }
-    return {
-        data: encode(new Uint8Array(int16.buffer)),
-        mimeType: 'audio/pcm;rate=16000',
-    };
-}
-
+import { decode, decodeAudioData, createBlob } from '../../utils/audio';
 
 const VoiceChatPanel: React.FC = () => {
     const [status, setStatus] = useState<'inactive' | 'connecting' | 'listening' | 'speaking' | 'error'>('inactive');
@@ -125,9 +68,7 @@ const VoiceChatPanel: React.FC = () => {
 
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
             
-            // FIX: Cast window to `any` to allow access to the non-standard `webkitAudioContext` for older browser compatibility.
             inputAudioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-            // FIX: Cast window to `any` to allow access to the non-standard `webkitAudioContext` for older browser compatibility.
             outputAudioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
             outputNode.current = outputAudioContext.current.createGain();
             outputNode.current.connect(outputAudioContext.current.destination);

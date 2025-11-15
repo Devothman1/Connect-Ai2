@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 import { File } from "../types";
 
 const API_KEY = process.env.API_KEY;
@@ -7,7 +7,7 @@ if (!API_KEY) {
 }
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
 
-const generateContent = async (prompt: string): Promise<string> => {
+const generateContent = async (prompt: string, config?: any): Promise<string> => {
     if (!API_KEY) {
       return new Promise(resolve => setTimeout(() => resolve(`// Mock response for: ${prompt.substring(0, 50)}...\nconsole.log("Hello from Mock AI!");`), 1000));
     }
@@ -15,6 +15,7 @@ const generateContent = async (prompt: string): Promise<string> => {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-pro',
           contents: prompt,
+          ...config,
         });
         return response.text;
     } catch (error) {
@@ -314,4 +315,117 @@ Code with bugs:
 ${code}
 \`\`\``;
     return generateContent(prompt);
+};
+
+export const generateRegex = (description: string): Promise<string> => {
+    const prompt = `Act as a regular expression expert. Based on the following description, generate a JavaScript-compatible regular expression. 
+Also provide a brief, step-by-step explanation of how the regex works.
+Format your response with the regex on the first line, followed by "---", and then the explanation.
+Only output the regex, the separator, and the explanation. Do not include markdown backticks or any other surrounding text.
+
+Description: "${description}"`;
+    return generateContent(prompt);
+};
+
+export const codeToNaturalLanguage = (code: string): Promise<string> => {
+    const prompt = `Translate the following code snippet into a clear, concise, high-level summary in plain English. Describe *what* the code does, not *how* it does it. The summary should be a single paragraph.
+
+Code:
+\`\`\`
+${code}
+\`\`\``;
+    return generateContent(prompt);
+};
+
+export const identifyAlgorithm = (code: string): Promise<string> => {
+    const prompt = `Analyze the following code and identify the specific, named algorithm or data structure it implements (e.g., "Bubble Sort", "Binary Search Tree", "Quick Sort"). If a well-known algorithm is present, name it and provide a one-sentence description of what it does. If no specific named algorithm is found, describe the general logic or process in one sentence.
+
+Code:
+\`\`\`
+${code}
+\`\`\``;
+    return generateContent(prompt);
+};
+
+export const generateApiUsage = (code: string): Promise<string> => {
+    const prompt = `Analyze the following code, which might contain functions, classes, or other exports. Generate a practical example of how to import and use the primary feature from this code in a separate JavaScript file. Only output the usage example code, without any explanation or markdown backticks.
+
+Code to generate usage for:
+\`\`\`
+${code}
+\`\`\``;
+    return generateContent(prompt);
+};
+
+export const generateDiagram = (code: string): Promise<string> => {
+    const prompt = `Analyze the following code and generate a diagram in Mermaid.js syntax that visually represents its structure and logic. Choose the most appropriate diagram type (e.g., flowchart, sequence diagram, class diagram). Only output the Mermaid.js syntax inside a markdown code block. Do not include any other explanation.
+
+Code:
+\`\`\`
+${code}
+\`\`\``;
+    return generateContent(prompt);
+};
+
+export const findDocumentation = async (query: string): Promise<{ answer: string; sources: any[] }> => {
+    if (!API_KEY) {
+        return { answer: "Mock search result for: " + query, sources: [{ web: { uri: '#', title: 'Mock Source' } }] };
+    }
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `Based on the latest information from Google Search, provide a clear and concise answer to the following question: "${query}"`,
+            config: {
+                tools: [{ googleSearch: {} }],
+            },
+        });
+        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+        return { answer: response.text, sources };
+    } catch (error) {
+        console.error("Gemini search failed:", error);
+        throw new Error("Failed to get response from AI search. Check console for details.");
+    }
+};
+
+export const generateSpeech = async (text: string): Promise<string> => {
+    if (!API_KEY) {
+        console.log("Mock speech generation for:", text);
+        return '';
+    }
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text: `Say this naturally: ${text}` }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: 'Kore' },
+                    },
+                },
+            },
+        });
+        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        return base64Audio ?? '';
+    } catch (error) {
+        console.error("Gemini speech generation failed:", error);
+        throw new Error("Failed to generate speech. Check console for details.");
+    }
+};
+
+export const generateCodeFromImage = async (base64Image: string, mimeType: string): Promise<string> => {
+    const imagePart = {
+      inlineData: {
+        mimeType: mimeType,
+        data: base64Image,
+      },
+    };
+    const textPart = {
+      text: 'Analyze this image which is a wireframe or screenshot of a user interface. Generate a single, complete HTML file that implements this UI. The HTML file must include all necessary CSS within <style> tags and any required JavaScript for basic interactivity within <script> tags. The code should be functional, responsive, and self-contained. Do not include any explanations, comments about the code, or markdown backticks. Output only the raw HTML code starting with <!DOCTYPE html>.'
+    };
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts: [imagePart, textPart] },
+    });
+    return response.text;
 };

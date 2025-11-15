@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo } from 'react';
 import { Tab, TABS } from './constants';
 import { ChatMessage, File, FileSystemTree } from './types';
@@ -17,6 +16,8 @@ import OutputPanel from './components/panels/OutputPanel';
 import VoiceChatPanel from './components/panels/VoiceChatPanel';
 import * as geminiService from './services/geminiService';
 import { findFile, getAllFiles } from './utils/fileSystem';
+import AiToolsPanel from './components/panels/AiToolsPanel';
+import UiGeneratorPanel from './components/panels/UiGeneratorPanel';
 
 const initialFileSystem: FileSystemTree = [
     { id: '1', name: 'README.md', content: '# Welcome to your AI-Powered IDE!\n\nStart by creating a new file or uploading a project.', type: 'file' },
@@ -127,10 +128,14 @@ const App: React.FC = () => {
                 );
             case Tab.AI_FEATURES:
                 return <AiFeaturesPanel onFeatureSelect={handleAiFeature} isLoading={isLoading} aiOutput={aiOutput} />;
+            case Tab.AI_TOOLS:
+                return <AiToolsPanel />;
             case Tab.AI_CHAT:
                 return <AiChatPanel messages={chatMessages} onSendMessage={handleSendChatMessage} isLoading={isLoading} activeFile={activeFile} />;
             case Tab.VOICE_CHAT:
                 return <VoiceChatPanel />;
+            case Tab.UI_GENERATOR:
+                return <UiGeneratorPanel setFileSystem={setFileSystem} setOpenFileIds={setOpenFileIds} setActiveFileId={setActiveFileId} setActiveTab={setActiveTab} />;
             case Tab.LEARNING_PATH:
                 return <LearningPathPanel allFiles={allFiles} />;
             case Tab.AI_DASHBOARD:

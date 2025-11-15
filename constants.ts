@@ -1,9 +1,10 @@
-
 export enum Tab {
     EDITOR = 'Editor',
     AI_FEATURES = 'AI Features',
+    AI_TOOLS = 'AI Tools',
     AI_CHAT = 'AI Assistant',
     VOICE_CHAT = 'Voice Chat',
+    UI_GENERATOR = 'UI Generator',
     LEARNING_PATH = 'Learning Path',
     AI_DASHBOARD = 'AI Dashboard',
     AI_CHALLENGES = 'AI Challenges',
